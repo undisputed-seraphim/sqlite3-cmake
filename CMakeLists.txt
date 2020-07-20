@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.8)
 project(sqlite3 VERSION 3.29.0)
 
+if(NOT WIN32)
+	find_package(Threads REQUIRED)
+endif()
+
 # SQLite built-in extensions
 option(BUILD_ENABLE_DBSTAT_VTAB "Enables dbstat virtual table"                  ON)
 option(BUILD_ENABLE_FTS3        "Enables full text searches version 3"         OFF)
@@ -37,18 +41,17 @@ target_compile_definitions(sqlite3 PUBLIC
 )
 
 add_executable(sqlite src/shell.c)
-target_link_libraries(sqlite PUBLIC sqlite3)
+target_link_libraries(sqlite PUBLIC sqlite3	
+	$<$<NOT:$<BOOL:${WIN32}>>:dl>
+	$<$<NOT:$<BOOL:${WIN32}>>:m>
+	$<$<NOT:$<BOOL:${WIN32}>>:Threads::Threads>
+)
 set_target_properties(sqlite PROPERTIES OUTPUT_NAME sqlite3)
 
 # Uncomment this for single-threaded variant (faster)
 #add_definitions(-DSQLITE_THREADSAFE=0)
 
 include(GNUInstallDirs)
-
-if(NOT WIN32)
-	include(FindThreads REQUIRED)
-	target_link_libraries(sqlite m Threads::Threads)
-endif()
 
 install(TARGETS sqlite RUNTIME DESTINATION bin)
 install(FILES src/sqlite3.h src/sqlite3ext.h DESTINATION include)
