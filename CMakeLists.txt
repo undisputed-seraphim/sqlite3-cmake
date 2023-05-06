@@ -39,6 +39,7 @@ target_compile_definitions(sqlite3 PUBLIC
 	$<$<BOOL:${MAX_COLUMN}>:SQLITE_MAX_COLUMN=${MAX_COLUMN}>
 	$<$<BOOL:${THREADSAFE}>:SQLITE_THREADSAFE>
 )
+set_target_properties(sqlite3 PROPERTIES OUTPUT_NAME_DEBUG sqlite3d)
 
 add_executable(sqlite src/shell.c)
 target_link_libraries(sqlite PUBLIC sqlite3	
@@ -52,7 +53,27 @@ set_target_properties(sqlite PROPERTIES OUTPUT_NAME sqlite3)
 #add_definitions(-DSQLITE_THREADSAFE=0)
 
 include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
 install(TARGETS sqlite RUNTIME DESTINATION bin)
 install(FILES src/sqlite3.h src/sqlite3ext.h DESTINATION include)
-install(TARGETS sqlite3 LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
+install(TARGETS sqlite3 EXPORT sqlite-targets LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
+install(EXPORT sqlite-targets DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sqlite NAMESPACE sqlite::)
+
+configure_package_config_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/sqlite-config.cmake.in
+	${CMAKE_CURRENT_BINARY_DIR}/sqlite-config.cmake
+	INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sqlite
+)
+
+write_basic_package_version_file(
+	${CMAKE_CURRENT_BINARY_DIR}/sqlite-version.cmake
+	COMPATIBILITY AnyNewerVersion
+)
+install(
+	FILES
+		${CMAKE_CURRENT_BINARY_DIR}/sqlite-config.cmake
+		${CMAKE_CURRENT_BINARY_DIR}/sqlite-version.cmake
+	DESTINATION
+		${CMAKE_INSTALL_LIBDIR}/cmake/sqlite
+)
